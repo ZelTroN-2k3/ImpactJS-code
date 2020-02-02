@@ -1,3 +1,4 @@
+/* ladder.js */
 /**
 	Ladder entity for ImpactJS (http://www.impactjs.com)
 
@@ -27,11 +28,16 @@ ig.module(
 .defines(function(){
 
 EntityLadder = ig.Entity.extend({
-	size: { x: 8, y: 64 },
+        size: {x: 16, y: 16},
+
+        // Width of ladders in game.
+        real_width: 10,
+
 	_wmScalable: true,
 	_wmDrawBox: true,
-	_wmBoxColor: 'rgba(150, 150, 255, 0.7)',
+	/*_wmBoxColor: 'rgba(150, 150, 255, 0.7)',*/
 	ladderSpeed: 65, // default. Override in weltmeister to affect an individual ladder (maybe vines are slower), or set in entity to determine its own climb speed
+	animSheet: new ig.AnimationSheet('media/tiles.png', 16, 16),
 	
 	type: ig.Entity.TYPE.B,
 	checkAgainst: ig.Entity.TYPE.BOTH,
@@ -39,6 +45,18 @@ EntityLadder = ig.Entity.extend({
 	init: function (x, y, settings) {
 		this.parent(x, y, settings);
 	},
+	
+        init: function(x, y, settings) {
+            this.parent(x, y, settings);
+            this.addAnim('idle', 1, [73]);
+            if(!ig.global.wm) {
+                var offset = (this.size.x - this.real_width)/2;
+                this.offset.x = offset;
+                this.size.x = this.real_width;
+                this.pos.x += offset;
+            }
+        },
+	
 	update: function () {
 		//player must have lower zIndex and sortEntitiesDeferred must be called in order for this to work
 	
@@ -48,6 +66,7 @@ EntityLadder = ig.Entity.extend({
 		}
 	
 	},
+	
 	check: function (other) {
 				
 		if (other.ladderReleaseTimer) { // if entity has this timer, then it has the ability to climb
@@ -99,7 +118,26 @@ EntityLadder = ig.Entity.extend({
 		else{
 			// entity does not have ladder timer (maybe it only flies or swims, or is a trigger or mover), so ignore ladder
 		}
-	}
+	},
+        draw: function() {
+            if(!ig.global.wm) {
+
+                // Draw tiles except the first one.
+                if( this.currentAnim ) {
+                    var tilesize = ig.game.collisionMap.tilesize;
+                    var tile_height = this.size.y / tilesize;
+                    for(var i=1; i<tile_height; i++) {
+                        this.currentAnim.draw(
+                            this.pos.x - this.offset.x - ig.game._rscreen.x,
+                            this.pos.y - this.offset.y - ig.game._rscreen.y + (i * tilesize)
+                        );
+                    }
+                }
+
+                // Draw first tile, and debug info.
+                this.parent();
+            }
+        }	
 });
 });
 
